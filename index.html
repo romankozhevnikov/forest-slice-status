@@ -69,6 +69,9 @@ button.head:focus-visible { outline: 2px solid var(--now); outline-offset: 2px; 
 .log li { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .log time { flex: none; color: var(--faint); font-size: 13px; font-variant-numeric: tabular-nums; padding-top: 2px; }
 .log .fail { color: var(--bad); }
+.more { all: unset; display: block; margin-top: 10px; padding: 6px 0; color: var(--now); font-size: 15px; cursor: pointer; }
+.more[hidden] { display: none; }
+.more:focus-visible { outline: 2px solid var(--now); outline-offset: 2px; }
 footer { color: var(--faint); font-size: 13px; margin-top: 22px; }
 </style>
 </head>
@@ -93,6 +96,7 @@ footer { color: var(--faint); font-size: 13px; margin-top: 22px; }
   <div id="stages"></div>
   <h2>Недавно готово</h2>
   <ul class="log" id="log"></ul>
+  <button class="more" id="more" type="button" hidden></button>
   <footer>Обновляется сама раз в полторы минуты. Нажми на этап, чтобы увидеть пункты.</footer>
 </main>
 <script>
@@ -101,6 +105,7 @@ const API = `https://api.github.com/repos/${REPO}/contents/status.json?ref=data`
 const RAW = `https://raw.githubusercontent.com/${REPO}/data/status.json`;
 const STALE_MIN = 12;
 const opened = new Set();
+let showAll = false;
 let data = null;
 const $ = id => document.getElementById(id);
 const make = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -151,7 +156,7 @@ function render() {
   $("taskR").textContent = data.rubanok || "";
 
   const bar = $("bar");
-  const plan = data.stages.filter(s => s.state !== "later");
+  const plan = data.stages.filter(s => s.state !== "later" && !s.past);
   bar.replaceChildren(...plan.map(s => make("i", s.state)));
   const done = plan.filter(s => s.state === "done").length;
   const now = plan.filter(s => s.state === "now").length;
@@ -193,14 +198,18 @@ function render() {
 
   const log = $("log");
   log.replaceChildren();
-  data.recent.forEach(x => {
+  data.recent.slice(0, showAll ? undefined : 10).forEach(x => {
     const li = make("li");
     li.append(make("time", "", x.at));
     li.append(make("span", x.kind === "FAILED" ? "fail" : "", x.title + (x.kind === "FAILED" ? " · сорвалось" : "")));
     log.append(li);
   });
+  const more = $("more");
+  more.hidden = data.recent.length <= 10;
+  more.textContent = showAll ? "Свернуть" : `Показать все: ${data.recent.length}`;
 }
 
+$("more").onclick = () => { showAll = !showAll; render(); };
 load();
 setInterval(load, 90000);
 setInterval(render, 30000);
