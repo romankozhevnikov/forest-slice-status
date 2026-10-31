@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Дорожная карта</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #12160f; --panel: #1b2117; --panel-2: #232b1e; --line: #343f2c;
+  --text: #ecebdc; --muted: #a3a892; --faint: #6f7662;
+  --done: #7fc96b; --now: #f0b24a; --next: #5c6552; --bad: #ef7d62;
+}
+@media (prefers-color-scheme: light) {
+  :root { color-scheme: light;
+    --bg: #f4f1e6; --panel: #fffdf6; --panel-2: #efeadb; --line: #d9d3bf;
+    --text: #272a1f; --muted: #646956; --faint: #8c9079;
+    --done: #3f8f32; --now: #b87510; --next: #b3b5a2; --bad: #bd4a2f; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
+main { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
+h1 { font-size: 24px; line-height: 1.2; margin: 0; letter-spacing: -.01em; }
+.sub { color: var(--muted); font-size: 14px; margin: 4px 0 18px; }
+.warn { display: none; background: var(--panel-2); border-left: 3px solid var(--bad); padding: 10px 12px; border-radius: 6px; font-size: 14px; margin-bottom: 14px; }
+.warn.on { display: block; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.who { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.lamp { width: 9px; height: 9px; border-radius: 50%; background: var(--next); flex: none; }
+.lamp.on { background: var(--now); animation: pulse 2s ease-in-out infinite; }
+.lamp.bad { background: var(--bad); }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .lamp.on { animation: none; } }
+.task { font-size: 17px; font-weight: 600; margin: 6px 0 2px; overflow-wrap: anywhere; }
+.time { color: var(--muted); font-size: 14px; }
+.queue { margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); list-style: none; }
+.queue li { padding: 2px 0; }
+.bar { display: flex; gap: 3px; margin: 14px 0 6px; }
+.bar i { flex: 1; height: 8px; border-radius: 2px; background: var(--next); opacity: .55; }
+.bar i.done { background: var(--done); opacity: 1; }
+.bar i.now { background: var(--now); opacity: 1; }
+.count { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 26px 0 10px; font-weight: 600; }
+.stage { position: relative; padding-left: 24px; }
+.stage::before { content: ""; position: absolute; left: 6px; top: 22px; bottom: -6px; width: 2px; background: var(--line); }
+.stage:last-child::before { display: none; }
+.dot { position: absolute; left: 0; top: 15px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--next); background: var(--bg); }
+.done > .dot { background: var(--done); border-color: var(--done); }
+.now > .dot { background: var(--now); border-color: var(--now); }
+button.head { all: unset; display: block; width: 100%; padding: 10px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button.head:focus-visible { outline: 2px solid var(--now); outline-offset: 2px; border-radius: 4px; }
+.name { font-weight: 600; display: block; }
+.next .name { color: var(--muted); font-weight: 500; }
+.hint { display: block; font-size: 14px; color: var(--muted); }
+.items { list-style: none; margin: 0 0 10px; padding: 0; font-size: 15px; display: none; }
+.open .items { display: block; }
+.items li { padding: 3px 0 3px 22px; position: relative; color: var(--muted); }
+.items li::before { content: "·"; position: absolute; left: 6px; color: var(--faint); }
+.items li.done { color: var(--text); }
+.items li.done::before { content: "✓"; left: 3px; color: var(--done); font-weight: 700; }
+.items li.now { color: var(--text); font-weight: 600; }
+.items li.now::before { content: "●"; left: 3px; font-size: 11px; top: 7px; color: var(--now); }
+.log { list-style: none; margin: 0; padding: 0; font-size: 15px; }
+.log li { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.log time { flex: none; color: var(--faint); font-size: 13px; font-variant-numeric: tabular-nums; padding-top: 2px; }
+.log .fail { color: var(--bad); }
+footer { color: var(--faint); font-size: 13px; margin-top: 22px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Дорожная карта</h1>
+  <p class="sub">My Endless Journey · <span id="fresh">загружаю…</span></p>
+  <div class="warn" id="warn"></div>
+  <section class="card">
+    <div class="who"><span class="lamp" id="lampL"></span><span id="stateL">Лобзик</span></div>
+    <div class="task" id="taskL">—</div>
+    <div class="time" id="timeL"></div>
+    <ul class="queue" id="queue" hidden></ul>
+  </section>
+  <section class="card" id="cardR" hidden>
+    <div class="who"><span class="lamp on"></span><span>Рубанок</span></div>
+    <div class="task" id="taskR"></div>
+  </section>
+  <div class="bar" id="bar" role="img"></div>
+  <div class="count" id="count"></div>
+  <h2>Этапы</h2>
+  <div id="stages"></div>
+  <h2>Недавно готово</h2>
+  <ul class="log" id="log"></ul>
+  <footer>Обновляется сама раз в полторы минуты. Нажми на этап, чтобы увидеть пункты.</footer>
+</main>
+<script>
+const REPO = "romankozhevnikov/forest-slice-status";
+const API = `https://api.github.com/repos/${REPO}/contents/status.json?ref=data`;
+const RAW = `https://raw.githubusercontent.com/${REPO}/data/status.json`;
+const STALE_MIN = 12;
+const opened = new Set();
+let data = null;
+const $ = id => document.getElementById(id);
+const make = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+function span(from) {
+  const m = Math.max(0, Math.round((Date.now() - Date.parse(from)) / 60000));
+  if (m < 1) return "только что";
+  if (m < 60) return `${m} мин`;
+  return `${Math.floor(m / 60)} ч ${m % 60} мин`;
+}
+
+async function load() {
+  for (const [url, headers] of [[API, {Accept: "application/vnd.github.raw+json"}], [`${RAW}?t=${Date.now()}`, {}]]) {
+    try {
+      const r = await fetch(url, {headers, cache: "no-store"});
+      if (!r.ok) continue;
+      data = await r.json();
+      render();
+      return;
+    } catch (e) { /* следующий источник */ }
+  }
+  $("fresh").textContent = "нет связи с GitHub";
+}
+
+function render() {
+  if (!data) return;
+  const age = (Date.now() - Date.parse(data.updated)) / 60000;
+  $("fresh").textContent = `обновлено ${span(data.updated) === "только что" ? "только что" : span(data.updated) + " назад"}`;
+  const warn = $("warn");
+  warn.classList.toggle("on", age > STALE_MIN);
+  warn.textContent = age > STALE_MIN ? `Компьютер молчит ${span(data.updated)}: данные могли устареть.` : "";
+
+  const L = data.lobzik;
+  const busy = L.state === "running" || L.state === "retrying";
+  $("lampL").className = "lamp" + (busy ? " on" : L.state === "failed" ? " bad" : "");
+  $("stateL").textContent = "Лобзик · " + (busy ? "работает" : L.state === "failed" ? "ошибка" : L.state === "waiting" ? "ждёт" : "свободен");
+  $("taskL").textContent = busy || L.state === "waiting" ? (L.title || L.task) : "Очередь пуста";
+  $("timeL").textContent = busy && L.since ? `идёт ${span(L.since)}` + (L.retries ? ` · повторов ${L.retries}` : "") : "";
+  const q = $("queue");
+  q.replaceChildren();
+  L.queue.forEach(x => q.append(make("li", "", "Следом: " + x.title)));
+  L.hold.forEach(x => q.append(make("li", "", "Отложено: " + x.title)));
+  q.hidden = !q.children.length;
+  $("cardR").hidden = !data.rubanok;
+  $("taskR").textContent = data.rubanok || "";
+
+  const bar = $("bar");
+  bar.replaceChildren(...data.stages.map(s => make("i", s.state)));
+  const done = data.stages.filter(s => s.state === "done").length;
+  const now = data.stages.filter(s => s.state === "now").length;
+  $("count").textContent = `Готово этапов: ${done} из ${data.stages.length}, в работе: ${now}`;
+  bar.setAttribute("aria-label", $("count").textContent);
+
+  const box = $("stages");
+  box.replaceChildren();
+  data.stages.forEach((s, i) => {
+    const key = s.title;
+    const open = opened.has(key) || (s.state === "now" && !opened.has("-" + key));
+    const row = make("div", `stage ${s.state}${open ? " open" : ""}`);
+    row.append(make("span", "dot"));
+    const head = make("button", "head");
+    head.type = "button";
+    head.setAttribute("aria-expanded", open);
+    head.append(make("span", "name", s.title));
+    const finished = s.items.filter(x => x.s === "done").length;
+    const hint = s.note || (s.items.length && s.state !== "done" && finished ? `Готово ${finished} из ${s.items.length}` : "");
+    if (hint) head.append(make("span", "hint", hint));
+    head.onclick = () => {
+      if (row.classList.contains("open")) { opened.delete(key); opened.add("-" + key); } else { opened.add(key); opened.delete("-" + key); }
+      render();
+    };
+    row.append(head);
+    if (s.items.length) {
+      const list = make("ul", "items");
+      s.items.forEach(x => list.append(make("li", x.s, x.t)));
+      row.append(list);
+    }
+    box.append(row);
+  });
+
+  const log = $("log");
+  log.replaceChildren();
+  data.recent.forEach(x => {
+    const li = make("li");
+    li.append(make("time", "", x.at));
+    li.append(make("span", x.kind === "FAILED" ? "fail" : "", x.title + (x.kind === "FAILED" ? " · сорвалось" : "")));
+    log.append(li);
+  });
+}
+
+load();
+setInterval(load, 90000);
+setInterval(render, 30000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+</script>
+</body>
+</html>
