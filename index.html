@@ -121,9 +121,9 @@ async function load() {
       const r = await fetch(url, {headers, cache: "no-store"});
       if (!r.ok) continue;
       data = await r.json();
-      render();
-      return;
-    } catch (e) { /* следующий источник */ }
+    } catch (e) { continue; }
+    render();
+    return;
   }
   $("fresh").textContent = "нет связи с GitHub";
 }
