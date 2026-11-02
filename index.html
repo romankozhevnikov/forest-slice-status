@@ -79,6 +79,11 @@ button.head:focus-visible { outline: 2px solid var(--now); outline-offset: 2px; 
 .more[hidden] { display: none; }
 .more:focus-visible { outline: 2px solid var(--now); outline-offset: 2px; }
 footer { color: var(--faint); font-size: 13px; margin-top: 22px; }
+.top { all: unset; box-sizing: border-box; position: fixed; right: 16px; bottom: 16px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); font-size: 22px; line-height: 1; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3); -webkit-tap-highlight-color: transparent; }
+.top[hidden] { display: none; }
+.top:focus-visible { outline: 2px solid var(--now); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -105,6 +110,7 @@ footer { color: var(--faint); font-size: 13px; margin-top: 22px; }
   <button class="more" id="more" type="button" hidden></button>
   <footer>Обновляется сама раз в полторы минуты. Нажми на этап, чтобы увидеть пункты, или на полоску вверху, чтобы перейти к этапу.</footer>
 </main>
+<button class="top" id="top" type="button" aria-label="Наверх" title="Наверх" hidden>↑</button>
 <script>
 const REPO = "romankozhevnikov/forest-slice-status";
 const API = `https://api.github.com/repos/${REPO}/contents/status.json?ref=data`;
@@ -224,16 +230,22 @@ function render() {
   more.textContent = showAll ? "Свернуть" : `Показать все: ${data.recent.length}`;
 }
 
+const motion = () => matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+
 function goTo(key) {
   opened.add(key);
   opened.delete("-" + key);
   render();
   const row = [...$("stages").children].find(x => x.dataset.key === key);
   if (!row) return;
-  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  row.scrollIntoView({behavior: calm ? "auto" : "smooth", block: "start"});
+  row.scrollIntoView({behavior: motion(), block: "start"});
   row.classList.add("flash");
 }
+
+const showTop = () => { $("top").hidden = scrollY < 400; };
+addEventListener("scroll", showTop, {passive: true});
+showTop();
+$("top").onclick = () => scrollTo({top: 0, behavior: motion()});
 
 $("more").onclick = () => { showAll = !showAll; render(); };
 load();
