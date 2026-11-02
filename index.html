@@ -37,13 +37,19 @@ h1 { font-size: 24px; line-height: 1.2; margin: 0; letter-spacing: -.01em; }
 .time { color: var(--muted); font-size: 14px; }
 .queue { margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); list-style: none; }
 .queue li { padding: 2px 0; }
-.bar { display: flex; gap: 3px; margin: 14px 0 6px; }
-.bar i { flex: 1; height: 8px; border-radius: 2px; background: var(--next); opacity: .55; }
+.bar { display: flex; gap: 3px; margin: 0 0 -8px; }
+.bar button { all: unset; flex: 1; min-width: 0; padding: 14px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.bar i { display: block; height: 8px; border-radius: 2px; background: var(--next); opacity: .55; }
 .bar i.done { background: var(--done); opacity: 1; }
 .bar i.now { background: var(--now); opacity: 1; }
+.bar button:active i { transform: scaleY(1.7); }
+.bar button:focus-visible i { outline: 2px solid var(--now); outline-offset: 2px; }
 .count { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
 h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 26px 0 10px; font-weight: 600; }
-.stage { position: relative; padding-left: 24px; }
+.stage { position: relative; padding-left: 24px; scroll-margin-top: 12px; border-radius: 8px; }
+.stage.flash { animation: flash 1.8s ease-out; }
+@keyframes flash { 0%, 35% { background: var(--panel-2); } 100% { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .stage.flash { animation: none; } }
 .stage::before { content: ""; position: absolute; left: 6px; top: 22px; bottom: -6px; width: 2px; background: var(--line); }
 .stage:last-child::before { display: none; }
 .dot { position: absolute; left: 0; top: 15px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--next); background: var(--bg); }
@@ -90,14 +96,14 @@ footer { color: var(--faint); font-size: 13px; margin-top: 22px; }
     <div class="who"><span class="lamp on"></span><span>Рубанок</span></div>
     <div class="task" id="taskR"></div>
   </section>
-  <div class="bar" id="bar" role="img"></div>
+  <div class="bar" id="bar" role="group"></div>
   <div class="count" id="count"></div>
   <h2>Этапы</h2>
   <div id="stages"></div>
   <h2>Недавно готово</h2>
   <ul class="log" id="log"></ul>
   <button class="more" id="more" type="button" hidden></button>
-  <footer>Обновляется сама раз в полторы минуты. Нажми на этап, чтобы увидеть пункты.</footer>
+  <footer>Обновляется сама раз в полторы минуты. Нажми на этап, чтобы увидеть пункты, или на полоску вверху, чтобы перейти к этапу.</footer>
 </main>
 <script>
 const REPO = "romankozhevnikov/forest-slice-status";
@@ -156,8 +162,16 @@ function render() {
   $("taskR").textContent = data.rubanok || "";
 
   const bar = $("bar");
-  const plan = data.stages.filter(s => s.state !== "later" && !s.past);
-  bar.replaceChildren(...plan.map(s => make("i", s.state)));
+  const plan = data.stages.filter(s => s.state !== "later");
+  bar.replaceChildren(...plan.map(s => {
+    const seg = make("button");
+    seg.type = "button";
+    seg.title = s.title;
+    seg.setAttribute("aria-label", s.title);
+    seg.append(make("i", s.state));
+    seg.onclick = () => goTo(s.title);
+    return seg;
+  }));
   const done = plan.filter(s => s.state === "done").length;
   const now = plan.filter(s => s.state === "now").length;
   $("count").textContent = `Готово этапов: ${done} из ${plan.length}, в работе: ${now}`;
@@ -169,6 +183,7 @@ function render() {
     const key = s.title;
     const open = opened.has(key) || (s.state === "now" && !opened.has("-" + key));
     const row = make("div", `stage ${s.state}${open ? " open" : ""}`);
+    row.dataset.key = key;
     row.append(make("span", "dot"));
     const head = make("button", "head");
     head.type = "button";
@@ -207,6 +222,17 @@ function render() {
   const more = $("more");
   more.hidden = data.recent.length <= 10;
   more.textContent = showAll ? "Свернуть" : `Показать все: ${data.recent.length}`;
+}
+
+function goTo(key) {
+  opened.add(key);
+  opened.delete("-" + key);
+  render();
+  const row = [...$("stages").children].find(x => x.dataset.key === key);
+  if (!row) return;
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  row.scrollIntoView({behavior: calm ? "auto" : "smooth", block: "start"});
+  row.classList.add("flash");
 }
 
 $("more").onclick = () => { showAll = !showAll; render(); };
